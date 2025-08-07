@@ -1,123 +1,152 @@
+
 datasource db {
   url      = env("DATABASE_URL")
   provider = "postgresql"
 }
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
-
 enum Role {
-  bot           @map("bot")
-  user          @map("user")
-  operator      @map("operator")
-  superOperator @map("superOperator")
-  @@map("role")
+  bot
+  user
 }
 
 enum Language {
-  uzb @map("uzb")
-  rus @map("rus")
-  eng @map("eng")
-  kaa @map("kaa")
+  uzb
+  rus
+  eng
+  kaa
   @@map("language")
 }
 
 enum UserStatus {
-  online  @map("online")
-  offline @map("offline")
+  online
+  offline
   @@map("user_status")
 }
 
-enum RoomStatus {
-  active @map("active")
-  closed @map("closed")
-  @@map("room_status")
-}
-
 enum MessageType {
-  file    @map("file")
-  link    @map("link")
-  message @map("message")
+  text
+  file
+  voice
+  video
+  sticker
+  reply
+  forwarded
+  system
   @@map("message_type")
 }
 
-model Auth {
-  id        String    @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  role      Role      @map("role")
-  username  String    @map("username") @db.VarChar()
-  password  String    @map("password") @db.VarChar()
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt DateTime? @map("deleted_at") @db.Timestamp(0)
-  @@id([id])
-  @@map("auth")
+enum ChatType {
+  private
+  group
+  channel
+  @@map("chat_type")
 }
 
 model User {
-  id            String     @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  role          Role       @map("role")
-  avatar        String?    @map("avatar") @db.VarChar(255)
-  status        UserStatus @map("status")
-  username      String     @map("username") @db.VarChar()
-  language      Language   @default(uzb) @map("language")
-  socketId      String?    @map("socket_id") @db.VarChar()
-  createdAt     DateTime   @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt     DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt     DateTime?  @map("deleted_at") @db.Timestamp(0)
-  room          Room[]
-  message       Message[]
-  history       History[]
-  @@id([id])
-  @@map("user")
+  id        String   @id @default(ulid())
+  role      Role
+  email     String   @unique
+  phone     String?  @unique
+  username  String   @unique
+  firstName String?
+  lastName  String?
+  password  String?
+  avatar    String?
+  status    UserStatus
+  language  Language @default(uzb)
+  socketId  String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  messages      Message[]
+  chats         ChatParticipant[]
+  sessions      Session[]
+  ownedChats    Chat[] @relation("OwnerChats")
 }
 
-model Room {
-  id         String     @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  name       String?    @map("name") @db.VarChar()
-  userId     String     @map("user_id") @db.Uuid
-  status     RoomStatus @map("status")
-  operatorIn Boolean    @default(false) @map("operator_in") @db.Boolean
-  operatorId String?    @map("operator_id") @db.Uuid
-  createdAt  DateTime   @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt  DateTime   @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt  DateTime?  @map("deleted_at") @db.Timestamp(0)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  message    Message[]
-  @@id([id])
-  @@map("room")
+model Session {
+  id        String   @id @default(ulid())
+  userId    String   @map("user_id")
+  userAgent String?
+  ip        String?
+  lastSeen  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model Chat {
+  id        String    @id @default(ulid())
+  title     String?
+  type      ChatType
+  ownerId   String?   @map("owner_id") 
+  avatar    String?   @map("avatar")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  messages       Message[]
+  participants   ChatParticipant[]
+  owner          User? @relation("OwnerChats", fields: [ownerId], references: [id])
+
+  @@index([title], name: "chat_title_index")
+  @@index([type], name: "chat_type_index")
+  @@index([ownerId], name: "chat_owner_index")
+  @@unique([title, type]) 
+  @@map("chats") 
+  
+}
+
+model ChatParticipant {
+  id        String   @id @default(ulid())
+  userId    String   @map("user_id") 
+  chatId    String   @map("chat_id") 
+  isAdmin   Boolean  @default(false) @map("is_admin") @db.Boolean
+  joinedAt  DateTime @default(now()) @map("joined_at")
+  isPinned   Boolean  @default(false) @map("is_pinned") @db.Boolean
+  isMuted    Boolean  @default(false) @map("is_muted") @db.Boolean
+  isArchived Boolean  @default(false) @map("is_archived") @db.Boolean
+  isRead     Boolean  @default(true)  @map("is_read") @db.Boolean
+  leftAt   DateTime? @map("left_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "chat_participant_user_index")
+  @@index([chatId], name: "chat_participant_chat_index")
+  @@unique([userId, chatId])
+  @@map("chat_participants")
+}
+
 
 model Message {
-  id        String      @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  text      String?     @map("text") @db.VarChar()
-  type      MessageType @map("type")
-  read      Boolean     @default(false) @map("read") @db.Boolean
-  content   String?     @map("content") @db.VarChar()
-  roomId    String      @map("room_id") @db.Uuid
-  userId    String      @map("user_id") @db.Uuid
-  replyToId String?     @map("reply_to_id") @db.Uuid // Added for replies
-  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt DateTime?   @map("deleted_at") @db.Timestamp(0)
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  room      Room        @relation(fields: [roomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  replyTo   Message?    @relation("Replies", fields: [replyToId], references: [id])
-  replies   Message[]   @relation("Replies")
-  @@id([id])
-  @@map("message")
-}
+  id         String      @id @default(ulid())
+  chatId     String      @map("chat_id")
+  senderId   String      @map("sender_id")
+  text       String?
+  type       MessageType @default(text)
+  content    String?
+  replyToId  String?
+  forwardedFromId String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deletedAt  DateTime?
 
-model History {
-  id        String    @default(dbgenerated("gen_random_uuid()")) @map("id") @db.Uuid
-  file      String    @map("file") @db.VarChar()
-  userId    String    @map("user_id") @db.Uuid
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
-  deletedAt DateTime? @map("deleted_at") @db.Timestamp(0)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  @@id([id])
-  @@map("history")
+  chat        Chat       @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender      User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  replyTo     Message?   @relation("replyTo", fields: [replyToId], references: [id])
+  replies     Message[]  @relation("replyTo")
+  forwardedFrom Message? @relation("forwardedFrom", fields: [forwardedFromId], references: [id])
+  forwarded   Message[]  @relation("forwardedFrom")
+
+  @@index([chatId], name: "message_chat_index")
+  @@index([senderId], name: "message_sender_index")
+  @@index([type], name: "message_type_index")
+  @@index([createdAt], name: "message_created_at_index")
+  @@unique([chatId, id]) // Ensures unique messages per chat
+  @@map("messages")
 }

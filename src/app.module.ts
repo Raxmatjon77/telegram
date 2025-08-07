@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { LoggerInterceptor, LoggerModule, ZodPipe, ErrorFilter } from '#common'
 
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,6 +24,7 @@ import { LoggerInterceptor, LoggerModule, ZodPipe, ErrorFilter } from '#common'
       global: true,
       middleware: { mount: true },
     }),
+
   ],
   providers: [
     { provide: APP_GUARD, useClass: AppGuard },

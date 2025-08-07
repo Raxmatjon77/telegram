@@ -4,6 +4,16 @@ import { NestFactory } from '@nestjs/core'
 import { VersioningType } from '@nestjs/common'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { NestExpressApplication } from '@nestjs/platform-express'
+import { User } from '#common'
+
+
+declare module 'nestjs-cls' {
+  interface ClsStore {
+    user: User
+    reqId: string
+    reqIp: string
+  }
+}
 
 const bootstrap = async (): Promise<void> => {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
