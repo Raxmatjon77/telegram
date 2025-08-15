@@ -3,6 +3,7 @@ import { AuthService } from './auth.service'
 import { UserRefreshDto, UserSigninDto, UserSignupDto } from './dto'
 import { UserSigninResponse, UserSignupResponse } from './interface'
 import { Body, Controller, HttpCode, Post, HttpStatus, Injectable } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 
 @Injectable()
 @Controller({
@@ -17,19 +18,21 @@ export class AuthController {
 
   @Post('/signup')
   @HttpCode(HttpStatus.CREATED)
+  @Throttle({ short: { limit: 2, ttl: 60000 } }) // 2 requests per minute for signup
   SignUp(@Body() dto: UserSignupDto): Promise<UserSignupResponse> {
-    console.log('dto: ', dto)
     return this.#_service.signUp(dto)
   }
 
   @Post('/signin')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ short: { limit: 3, ttl: 60000 } }) // 3 requests per minute for signin
   SignIn(@Body() dto: UserSigninDto): Promise<UserSigninResponse> {
     return this.#_service.signIn(dto)
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ medium: { limit: 10, ttl: 60000 } }) // 10 requests per minute for token refresh
   refresh(@Body() payload: UserRefreshDto): Promise<Tokens> {
     return this.#_service.refresh(payload)
   }

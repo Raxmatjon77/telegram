@@ -1,13 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common'
 import { JwtService, PrismaService } from '#services'
 import { Tokens } from './types/'
-
 
 import {
   UserRefreshRequestInterface,
   UserSigninRequest,
   UserSigninResponse,
-  // UserSignupRequest,
   UserSignupResponse,
 } from './interface'
 import { hash, compare } from '#common'
@@ -33,7 +31,7 @@ export class AuthService {
       })
 
       if (existuser) {
-        throw new BadRequestException('User with this email is already exist !')
+        throw new BadRequestException('User with this email already exists')
       }
 
       const hashedPassword = await hash(dto.password)
@@ -56,41 +54,51 @@ export class AuthService {
         refresh_token: tokens.refresh_token,
       }
     } catch (error) {
-      console.log(error)
-
-      throw error
+      if (error instanceof BadRequestException) {
+        throw error
+      }
+      
+      console.error('Signup error:', error.message)
+      throw new InternalServerErrorException('Registration failed')
     }
   }
 
   async signIn(dto: UserSigninRequest): Promise<UserSigninResponse> {
-    const user = await this.#_prisma.user.findUnique({
-      where: {
-        email: dto.email,
-        deletedAt: null,
-      },
-      select: {
-        id: true,
-        email: true,
-        password: true,
-      },
-    })
+    try {
+      const user = await this.#_prisma.user.findUnique({
+        where: {
+          email: dto.email,
+          deletedAt: null,
+        },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+        },
+      })
 
-    if (!user) throw new NotFoundException('User Not found !')
+      if (!user) throw new NotFoundException('Invalid email or password')
 
-    console.log('after finding user')
+      const passwordMatches = await compare(dto.password, user.password)
 
-    const passwordMatches = await compare(dto.password, user.password)
+      if (!passwordMatches) {
+        throw new ForbiddenException('Invalid email or password')
+      }
 
-    if (!passwordMatches) {
-      throw new ForbiddenException('Access denied !')
-    }
+      const tokens = await this.#_getTokens(user.id, user.email)
 
-    const tokens = await this.#_getTokens(user.id, user.email)
-
-    return {
-      id: user.id,
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
+      return {
+        id: user.id,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      }
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof ForbiddenException) {
+        throw error
+      }
+      
+      console.error('Signin error:', error.message)
+      throw new InternalServerErrorException('Authentication failed')
     }
   }
 
@@ -106,46 +114,25 @@ export class AuthService {
       },
     })
 
-    if (!user) throw new NotFoundException('User not Found !')
+    if (!user) throw new NotFoundException('User not found')
 
     const tokens = await this.#_getTokens(user.id, user.email)
 
     return tokens
   }
 
-  // async getUser(token: string) {
-  //     const decoded = await this.#_jwt.verify(token, {)
-
-  //   console.log('decoded: ', decoded)
-
-  //   const user = await this.#_prisma.user.findUnique({
-  //     where: {
-  //       id: decoded.sub,
-  //     },
-  //     select: {
-  //       id: true,
-  //     },
-  //   })
-  //   if (!user) throw new NotFoundException('User not found !')
-  //   return user
-  // }
-
   async #_getTokens(UserId: string, email: string): Promise<Tokens> {
     const [at, rt] = await Promise.all([
-      this.#_jwt.sign(
-        {
-          sub: UserId,
-          email,
-          type: 'access',
-        },
-      ),
-      this.#_jwt.sign(
-        {
-          sub: UserId,
-          email,
-          type: 'refresh',
-        },
-      ),
+      this.#_jwt.sign({
+        sub: UserId,
+        email,
+        type: 'access',
+      }),
+      this.#_jwt.sign({
+        sub: UserId,
+        email,
+        type: 'refresh',
+      }),
     ])
 
     return {

@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, InternalServerErrorException } from '@nestjs/common'
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Request } from 'express'
 
@@ -15,11 +15,11 @@ export class AppGuard implements CanActivate {
     const token = req.header('x-app-token')
 
     if (!token) {
-      throw new InternalServerErrorException('Invalid credentials')
+      throw new UnauthorizedException('App token is required')
     }
 
     if (token !== this.#_token) {
-      throw new InternalServerErrorException('Invalid credentials')
+      throw new UnauthorizedException('Invalid app token')
     }
 
     return true

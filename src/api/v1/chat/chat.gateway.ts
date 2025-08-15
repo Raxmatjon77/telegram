@@ -3,10 +3,10 @@ import { CreateMessageDto } from './dto'
 import { WsAuthMiddleware } from '#common'
 import { Socket, Server } from 'socket.io'
 import { MessagingService } from './messaging.service'
-import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket, OnGatewayInit } from '@nestjs/websockets'
+import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets'
 
 @WebSocketGateway({ cors: true })
-export class MessagesGateway implements OnGatewayInit {
+export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   readonly #_messaging: MessagingService
   readonly #_auth: WsAuthMiddleware
   readonly #_cls: ClsService
@@ -23,23 +23,39 @@ export class MessagesGateway implements OnGatewayInit {
     })
   }
 
+  handleConnection(client: Socket) {
+    console.log(`Client connected: ${client.id}`)
+  }
+
+  handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`)
+  }
+
   @SubscribeMessage('sendMessage')
   async handleSendMessage(@MessageBody() dto: CreateMessageDto, @ConnectedSocket() client: Socket) {
-    this.#_cls.set('user', client.data.user)
-    console.log('dto', dto)
-    
+    try {
+      this.#_cls.set('user', client.data.user)
 
-    const message = await this.#_messaging.sendMessage(dto)
-    client.to(dto.chatId).emit('newMessage', message)
-    return message
+      const message = await this.#_messaging.sendMessage(dto)
+      client.to(dto.chatId).emit('newMessage', message)
+      return message
+    } catch (error) {
+      console.error('Send message error:', error.message)
+      client.emit('error', { message: 'Failed to send message' })
+    }
   }
 
   @SubscribeMessage('joinChat')
   async handleJoinChat(@MessageBody('chatId') chatId: string, @ConnectedSocket() client: Socket) {
-    this.#_cls.set('user', client.data.user)
+    try {
+      this.#_cls.set('user', client.data.user)
 
-    client.join(chatId)
-    return { event: 'joinedChat', chatId }
+      client.join(chatId)
+      return { event: 'joinedChat', chatId }
+    } catch (error) {
+      console.error('Join chat error:', error.message)
+      client.emit('error', { message: 'Failed to join chat' })
+    }
   }
 
   @SubscribeMessage('getMessages')
@@ -47,15 +63,25 @@ export class MessagesGateway implements OnGatewayInit {
     @MessageBody() data: { chatId: string; limit?: number; cursor?: string },
     @ConnectedSocket() client: Socket,
   ) {
-    this.#_cls.set('user', client.data.user)
+    try {
+      this.#_cls.set('user', client.data.user)
 
-    return this.#_messaging.getChatMessages(data.chatId, data.limit, data.cursor)
+      return this.#_messaging.getChatMessages(data.chatId, data.limit, data.cursor)
+    } catch (error) {
+      console.error('Get messages error:', error.message)
+      client.emit('error', { message: 'Failed to retrieve messages' })
+    }
   }
 
   @SubscribeMessage('deleteMessage')
   async handleDeleteMessage(@MessageBody('messageId') messageId: string, @ConnectedSocket() client: Socket) {
-    this.#_cls.set('user', client.data.user)
+    try {
+      this.#_cls.set('user', client.data.user)
 
-    return this.#_messaging.deleteMessage(messageId)
+      return this.#_messaging.deleteMessage(messageId)
+    } catch (error) {
+      console.error('Delete message error:', error.message)
+      client.emit('error', { message: 'Failed to delete message' })
+    }
   }
 }
