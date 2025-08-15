@@ -33,7 +33,7 @@ export class JwtService {
       return payload
     } catch (error) {
       // Log error for debugging but don't expose details
-      console.error('JWT verification failed:', error.message)
+      console.error('JWT verification failed:', error)
       return null
     }
   }

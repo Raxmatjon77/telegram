@@ -40,7 +40,7 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       client.to(dto.chatId).emit('newMessage', message)
       return message
     } catch (error) {
-      console.error('Send message error:', error.message)
+      console.error('Send message error:', error)
       client.emit('error', { message: 'Failed to send message' })
     }
   }
@@ -53,7 +53,7 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       client.join(chatId)
       return { event: 'joinedChat', chatId }
     } catch (error) {
-      console.error('Join chat error:', error.message)
+      console.error('Join chat error:', error)
       client.emit('error', { message: 'Failed to join chat' })
     }
   }
@@ -68,7 +68,7 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
       return this.#_messaging.getChatMessages(data.chatId, data.limit, data.cursor)
     } catch (error) {
-      console.error('Get messages error:', error.message)
+      console.error('Get messages error:', error)
       client.emit('error', { message: 'Failed to retrieve messages' })
     }
   }
@@ -80,7 +80,7 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
       return this.#_messaging.deleteMessage(messageId)
     } catch (error) {
-      console.error('Delete message error:', error.message)
+      console.error('Delete message error:', error)
       client.emit('error', { message: 'Failed to delete message' })
     }
   }

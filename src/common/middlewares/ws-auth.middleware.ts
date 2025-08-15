@@ -38,7 +38,7 @@ export class WsAuthMiddleware {
       socket.data.user = user
       next()
     } catch (err) {
-      console.error('WebSocket authentication failed:', err.message)
+      console.error('WebSocket authentication failed:', err)
       next(new UnauthorizedException('Authentication failed'))
     }
   }

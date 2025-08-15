@@ -1,13 +1,14 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common'
 import { JwtService, PrismaService } from '#services'
 import { Tokens } from './types/'
 
-import {
-  UserRefreshRequestInterface,
-  UserSigninRequest,
-  UserSigninResponse,
-  UserSignupResponse,
-} from './interface'
+import { UserRefreshRequestInterface, UserSigninRequest, UserSigninResponse, UserSignupResponse } from './interface'
 import { hash, compare } from '#common'
 import { Language, Role, UserStatus } from '@prisma/client'
 import { UserSignupDto } from './dto'
@@ -57,8 +58,8 @@ export class AuthService {
       if (error instanceof BadRequestException) {
         throw error
       }
-      
-      console.error('Signup error:', error.message)
+
+      console.error('Signup error:', error)
       throw new InternalServerErrorException('Registration failed')
     }
   }
@@ -96,8 +97,8 @@ export class AuthService {
       if (error instanceof NotFoundException || error instanceof ForbiddenException) {
         throw error
       }
-      
-      console.error('Signin error:', error.message)
+
+      console.error('Signin error:', error)
       throw new InternalServerErrorException('Authentication failed')
     }
   }
