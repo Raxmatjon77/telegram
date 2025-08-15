@@ -7,7 +7,7 @@ import {
   UserRefreshRequestInterface,
   UserSigninRequest,
   UserSigninResponse,
-  UserSignupRequest,
+  // UserSignupRequest,
   UserSignupResponse,
 } from './interface'
 import { hash, compare } from '#common'

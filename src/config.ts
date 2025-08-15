@@ -17,7 +17,7 @@ export declare type Config = {
   }
   jwt: {
     secret: string
-    expiration:string
+    expiration: string
   }
 }
 
@@ -38,8 +38,8 @@ export const config = (): Config => ({
   app: {
     token: process.env.APP_TOKEN,
   },
-  jwt:{
-    secret:'dsf',
-    expiration:'10000'
-  }
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    expiration: process.env.JWT_EXPIRE,
+  },
 })

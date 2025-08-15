@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { ChatsService } from './chats.service'
 import { CreateDto } from './dto'
 import { ProfileGuard } from '#common'
@@ -24,5 +24,45 @@ export class ChatsController {
   @Get()
   getChats(): Promise<Chat[]> {
     return this.#_service.getChats()
+  }
+
+  @Get('search')
+  searchChats(@Query('query') query: string): Promise<Chat[]> {
+    return this.#_service.search(query)
+  }
+
+  @Get('search/users')
+  searchByUser(@Query('query') query: string): Promise<Chat[]> {
+    return this.#_service.searchByUser(query)
+  }
+
+  @Get('pinned')
+  getPinnedChats(): Promise<Chat[]> {
+    return this.#_service.getPinnedChats()
+  }
+
+  @Post('direct/:targetUserId')
+  createDirectChat(@Param('targetUserId') targetUserId: string): Promise<Chat> {
+    return this.#_service.createDirectChat(targetUserId)
+  }
+
+  @Delete(':chatId/leave')
+  leaveChat(@Param('chatId') chatId: string): Promise<void> {
+    return this.#_service.leaveChat(chatId)
+  }
+
+  @Patch(':chatId/read')
+  markAsRead(@Param('chatId') chatId: string): Promise<void> {
+    return this.#_service.markAsRead(chatId)
+  }
+
+  @Patch(':chatId/read-all')
+  markAllAsRead(@Param('chatId') chatId: string): Promise<void> {
+    return this.#_service.markAllAsRead(chatId)
+  }
+
+  @Patch(':chatId/pin')
+  pinChat(@Param('chatId') chatId: string, @Body() body: { isPinned: boolean }): Promise<void> {
+    return this.#_service.pinChat(chatId, body.isPinned)
   }
 }

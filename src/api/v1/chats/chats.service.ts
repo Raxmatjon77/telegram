@@ -3,6 +3,8 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { CreateDto } from './dto'
 import { ClsService } from 'nestjs-cls'
 import { Chat } from '@prisma/client'
+import { log } from 'console'
+import { string } from 'zod'
 
 @Injectable()
 export class ChatsService {
@@ -59,10 +61,14 @@ export class ChatsService {
     })
   }
 
-  async search(query: string): Promise<Chat[]> {
+  async search(query: string): Promise<any> {
     const user = this.#_cls.get('user')
 
-    return this.#_prisma.chat.findMany({
+    let userChats = []
+
+    log('Searching for chats with query:', query)
+
+    userChats = await this.#_prisma.chat.findMany({
       where: {
         title: {
           contains: query,
@@ -85,6 +91,64 @@ export class ChatsService {
         updatedAt: 'desc',
       },
     })
+    if (userChats.length > 0) {
+      return userChats
+    } else {
+      const user = await this.#_prisma.user.findMany({
+        where: {
+          OR: [
+            { username: { contains: query, mode: 'insensitive' } },
+            { firstName: { contains: query, mode: 'insensitive' } },
+            { lastName: { contains: query, mode: 'insensitive' } },
+            { email: { contains: query, mode: 'insensitive' } },
+          ],
+        },
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          email: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      })
+
+      if (user.length === 0) {
+        return []
+      } else {
+        return {
+          id: 'string',
+          participants: [
+            {
+              user: {
+                id: user[0].id,
+                username: user[0].username,
+                firstName: user[0].firstName,
+                lastName: user[0].lastName,
+                avatar: user[0].avatar,
+                email: user[0].email,
+                createdAt: user[0].createdAt,
+                updatedAt: user[0].updatedAt,
+              },
+            },
+          ],
+          title: user[0].username,
+          type: 'private',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          ownerId: user[0].id,
+          isPinned: false,
+          isRead: false,
+          deletedAt: null,
+          lastMessage: null,
+          lastMessageAt: null,
+          unreadCount: 0,
+          isArchived: false,
+        }
+      }
+    }
   }
 
   async searchByUser(query: string): Promise<Chat[]> {
@@ -204,5 +268,42 @@ export class ChatsService {
     })
   }
 
-  
+  async markAsRead(chatId: string) {
+    const user = this.#_cls.get('user')
+
+    await this.#_prisma.chatParticipant.update({
+      where: {
+        userId_chatId: { userId: user.id, chatId },
+      },
+      data: {
+        isRead: true,
+      },
+    })
+  }
+
+  async markAllAsRead(chatId: string) {
+    const user = this.#_cls.get('user')
+
+    await this.#_prisma.chatParticipant.update({
+      where: {
+        userId_chatId: { userId: user.id, chatId },
+      },
+      data: {
+        isRead: true,
+      },
+    })
+  }
+
+  async pinChat(chatId: string, isPinned: boolean): Promise<void> {
+    const user = this.#_cls.get('user')
+
+    await this.#_prisma.chatParticipant.update({
+      where: {
+        userId_chatId: { userId: user.id, chatId },
+      },
+      data: {
+        isPinned,
+      },
+    })
+  }
 }

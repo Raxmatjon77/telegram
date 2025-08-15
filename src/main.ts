@@ -33,7 +33,7 @@ const bootstrap = async (): Promise<void> => {
   app.enableVersioning({ type: VersioningType.URI })
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Billing Service')
+    .setTitle('Chat Service')
     .setVersion('1.0.0')
     .setDescription('Rest API Documentation')
     .addBearerAuth()
