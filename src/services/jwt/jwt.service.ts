@@ -5,11 +5,11 @@ import { jwtVerify, SignJWT, JWTPayload } from 'jose'
 @Injectable()
 export class JwtService {
   readonly #_secret: Uint8Array<ArrayBufferLike>
-  readonly #_expiration: number
+  readonly #_expiration: string
 
   constructor(config: ConfigService) {
     this.#_secret = new TextEncoder().encode(config.getOrThrow<string>('jwt.secret'))
-    this.#_expiration = config.getOrThrow<number>('jwt.expiration')
+    this.#_expiration = config.get<string>('jwt.expiration', '1h')
   }
 
   async sign(payload: JWTPayload): Promise<string> {
@@ -18,13 +18,13 @@ export class JwtService {
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt(date)
       .setNotBefore(date)
-      .setExpirationTime(new Date(date.getTime() + 3600000000))
+      .setExpirationTime(this.#_expiration)
       .sign(this.#_secret)
 
     return token
   }
 
-  async verify(token: string): Promise<JWTPayload> {
+  async verify(token: string): Promise<JWTPayload | null> {
     try {
       const { payload } = await jwtVerify(token, this.#_secret, {
         algorithms: ['HS256'],
@@ -32,7 +32,8 @@ export class JwtService {
 
       return payload
     } catch (error) {
-      console.log('error: ', error)
+      // Log error for debugging but don't expose details
+      console.error('JWT verification failed:', error.message)
       return null
     }
   }

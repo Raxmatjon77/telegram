@@ -20,13 +20,13 @@ export class ProfileGuard implements CanActivate {
     const token = req.header('x-user-token')
 
     if (!token) {
-      throw new UnauthorizedException('suuu')
+      throw new UnauthorizedException('Authentication token is required')
     }
 
     const payload = await this.#_jwt.verify(token)
 
     if (!payload) {
-      throw new UnauthorizedException()
+      throw new UnauthorizedException('Invalid or expired token')
     }
 
     const user = await this.#_prisma.user.findUnique({
@@ -36,13 +36,11 @@ export class ProfileGuard implements CanActivate {
     })
 
     if (!user) {
-      throw new UnauthorizedException()
+      throw new UnauthorizedException('User not found')
     }
 
-    console.log('user: ', user)
-
     if (user.deletedAt) {
-      throw new ForbiddenException('User is deleted')
+      throw new ForbiddenException('Account has been deactivated')
     }
 
     this.#_cls.set('user', {
