@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common'
+import { ulid } from 'ulid'
 import { Tokens } from './types/'
 import { UserSignupDto } from './dto'
 import { ClsService } from 'nestjs-cls'
@@ -13,14 +14,13 @@ import { hash, compare } from '#common'
 import { JwtService, PrismaService } from '#services'
 import { Language, Role, UserStatus } from '@prisma/client'
 import { UserRefreshRequestInterface, UserSigninRequest, UserSigninResponse, UserSignupResponse } from './interface'
-import { ulid } from 'ulid'
 
 @Injectable()
 export class AuthService {
   readonly #_prisma: PrismaService
   readonly #_jwt: JwtService
   readonly #_cls: ClsService
-  
+
   constructor(prisma: PrismaService, jwt: JwtService, cls: ClsService) {
     this.#_prisma = prisma
     this.#_jwt = jwt
@@ -54,7 +54,7 @@ export class AuthService {
 
       const session = await this.#_createSession({ userId: newUser.id })
       const tokens = await this.#_generateTokens(newUser.id, newUser.email, session.id)
-      
+
       return {
         id: newUser.id,
         access_token: tokens.access_token,
@@ -65,7 +65,7 @@ export class AuthService {
         throw error
       }
 
-      console.error('Signup error:', error.message)
+      console.error('Signup error:', error)
       throw new InternalServerErrorException('Registration failed')
     }
   }
@@ -95,9 +95,9 @@ export class AuthService {
       const session = await this.#_createSession({ userId: user.id })
       const tokens = await this.#_generateTokens(user.id, user.email, session.id)
 
-      await this.#_prisma.user.update({
+      this.#_prisma.user.update({
         where: { id: user.id },
-        data: { lastSeenAt: new Date() }
+        data: { lastSeenAt: new Date() },
       })
 
       return {
@@ -110,7 +110,7 @@ export class AuthService {
         throw error
       }
 
-      console.error('Signin error:', error.message)
+      console.error('Signin error:', error)
       throw new InternalServerErrorException('Authentication failed')
     }
   }
@@ -127,9 +127,9 @@ export class AuthService {
             id: true,
             email: true,
             deletedAt: true,
-          }
-        }
-      }
+          },
+        },
+      },
     })
 
     if (!refreshToken) {
@@ -146,16 +146,12 @@ export class AuthService {
     }
 
     await this.#_revokeRefreshToken(refreshToken.id)
-    
-    const tokens = await this.#_generateTokens(
-      refreshToken.user.id, 
-      refreshToken.user.email, 
-      refreshToken.sessionId
-    )
+
+    const tokens = await this.#_generateTokens(refreshToken.user.id, refreshToken.user.email, refreshToken.sessionId)
 
     await this.#_prisma.user.update({
       where: { id: refreshToken.user.id },
-      data: { lastSeenAt: new Date() }
+      data: { lastSeenAt: new Date() },
     })
 
     return tokens
@@ -163,12 +159,12 @@ export class AuthService {
 
   async logout(refreshToken: string): Promise<{ success: boolean }> {
     const token = await this.#_prisma.refreshToken.findUnique({
-      where: { token: refreshToken }
+      where: { token: refreshToken },
     })
 
     if (token) {
       await this.#_revokeRefreshToken(token.id)
-      
+
       if (token.sessionId) {
         await this.#_terminateSession(token.sessionId)
       }
@@ -181,24 +177,24 @@ export class AuthService {
     await this.#_prisma.refreshToken.updateMany({
       where: {
         userId,
-        isRevoked: false
+        isRevoked: false,
       },
       data: {
         isRevoked: true,
-        revokedAt: new Date()
-      }
+        revokedAt: new Date(),
+      },
     })
 
     await this.#_prisma.session.updateMany({
       where: {
         userId,
         isActive: true,
-        deletedAt: null
+        deletedAt: null,
       },
       data: {
         isActive: false,
-        deletedAt: new Date()
-      }
+        deletedAt: new Date(),
+      },
     })
 
     return { success: true }
@@ -209,7 +205,7 @@ export class AuthService {
       where: {
         userId,
         deletedAt: null,
-        isActive: true
+        isActive: true,
       },
       select: {
         id: true,
@@ -219,11 +215,11 @@ export class AuthService {
         ip: true,
         userAgent: true,
         lastSeen: true,
-        createdAt: true
+        createdAt: true,
       },
       orderBy: {
-        lastSeen: 'desc'
-      }
+        lastSeen: 'desc',
+      },
     })
   }
 
@@ -233,8 +229,8 @@ export class AuthService {
         userId,
         isRevoked: false,
         expiresAt: {
-          gt: new Date()
-        }
+          gt: new Date(),
+        },
       },
       select: {
         id: true,
@@ -242,11 +238,11 @@ export class AuthService {
         userAgent: true,
         ip: true,
         createdAt: true,
-        expiresAt: true
+        expiresAt: true,
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     })
   }
 
@@ -254,14 +250,14 @@ export class AuthService {
     const result = await this.#_prisma.refreshToken.updateMany({
       where: {
         expiresAt: {
-          lt: new Date()
+          lt: new Date(),
         },
-        isRevoked: false
+        isRevoked: false,
       },
       data: {
         isRevoked: true,
-        revokedAt: new Date()
-      }
+        revokedAt: new Date(),
+      },
     })
 
     return { deletedCount: result.count }
@@ -274,7 +270,7 @@ export class AuthService {
         email,
         type: 'access',
       }),
-      this.#_generateRefreshToken()
+      this.#_generateRefreshToken(),
     ])
 
     const refreshTokenExpiresAt = new Date()
@@ -289,7 +285,7 @@ export class AuthService {
         ip: this.#_cls.get('reqIp'),
         deviceId: this.#_cls.get('deviceId'),
         expiresAt: refreshTokenExpiresAt,
-      }
+      },
     })
 
     return {
@@ -307,8 +303,8 @@ export class AuthService {
       where: { id: tokenId },
       data: {
         isRevoked: true,
-        revokedAt: new Date()
-      }
+        revokedAt: new Date(),
+      },
     })
   }
 
@@ -319,7 +315,6 @@ export class AuthService {
         ip: this.#_cls.get('reqIp'),
         device: this.#_cls.get('device'),
         deviceId: this.#_cls.get('deviceId'),
-        platform: this.#_cls.get('platform'),
         userAgent: this.#_cls.get('userAgent'),
       },
     })

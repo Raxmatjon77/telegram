@@ -6,13 +6,14 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import { NestExpressApplication } from '@nestjs/platform-express'
 import { User } from '#common'
 
-
 declare module 'nestjs-cls' {
   interface ClsStore {
     user: User
     reqId: string
     reqIp: string
-    device:string
+    device: string
+    userAgent: string
+    deviceId: string
   }
 }
 

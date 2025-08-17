@@ -71,13 +71,13 @@ export class AuthController {
     return this.#_service.getActiveRefreshTokens(user.id)
   }
 
-  @Delete('sessions/:sessionId')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(ProfileGuard)
-  async terminateSession(@Param('sessionId') sessionId: string): Promise<{ success: boolean }> {
-    await this.#_service['_terminateSession'](sessionId)
-    return { success: true }
-  }
+  // @Delete('sessions/:sessionId')
+  // @HttpCode(HttpStatus.OK)
+  // @UseGuards(ProfileGuard)
+  // async terminateSession(@Param('sessionId') sessionId: string): Promise<{ success: boolean }> {
+  //   await this.#_service.te(sessionId)
+  //   return { success: true }
+  // }
 
   @Post('cleanup-expired-tokens')
   @HttpCode(HttpStatus.OK)

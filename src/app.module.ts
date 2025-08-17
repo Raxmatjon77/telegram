@@ -1,4 +1,4 @@
-import { ulid } from 'zod'
+// import { ulid } from 'zod'
 import { ApiModule } from '#api'
 import { config } from '#config'
 import { AppGuard } from './app.guard'
@@ -9,6 +9,7 @@ import { MinioModule, PrismaModule } from '#services'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core'
 import { LoggerInterceptor, LoggerModule, ZodPipe, ErrorFilter } from '#common'
+import { ulid } from 'ulid'
 
 @Module({
   imports: [
@@ -47,10 +48,14 @@ import { LoggerInterceptor, LoggerModule, ZodPipe, ErrorFilter } from '#common'
           const reqId = req.headers['x-req-id'] ?? ulid()
           const reqIp = req.headers['x-req-ip'] ?? req.ip ?? 'unknown'
           const device = req.header['x-device-name'] ?? 'unknown'
+          const userAgent = req.header['x-user-agent'] ?? 'unknown'
+          const deviceId = req.header['x-device-id'] ?? ulid()
 
           cls.set('reqId', reqId as string)
-          cls.set('reqIp', reqIp as string)
+          cls.set('userAgent', userAgent as string)
           cls.set('device', device as string)
+          cls.set('reqIp', reqIp as string)
+          cls.set('deviceId', deviceId as string)
         },
       },
     }),

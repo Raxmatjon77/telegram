@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
-import { PrismaService } from '../prisma/prisma.service'
+import { PrismaService } from '#services'
 
 @Injectable()
 export class TokenCleanupService {
@@ -14,24 +14,24 @@ export class TokenCleanupService {
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async cleanupExpiredTokens() {
     try {
-      this.logger.log('Starting cleanup of expired refresh tokens...')
+      this.logger.warn('Starting cleanup of expired refresh tokens...')
 
       const result = await this.#_prisma.refreshToken.updateMany({
         where: {
           expiresAt: {
-            lt: new Date()
+            lt: new Date(),
           },
-          isRevoked: false
+          isRevoked: false,
         },
         data: {
           isRevoked: true,
-          revokedAt: new Date()
-        }
+          revokedAt: new Date(),
+        },
       })
 
       this.logger.log(`Cleaned up ${result.count} expired refresh tokens`)
     } catch (error) {
-      this.logger.error('Failed to cleanup expired tokens:', error.message)
+      this.logger.error('Failed to cleanup expired tokens:', error)
     }
   }
 
@@ -46,20 +46,20 @@ export class TokenCleanupService {
       const result = await this.#_prisma.session.updateMany({
         where: {
           lastSeen: {
-            lt: thirtyDaysAgo
+            lt: thirtyDaysAgo,
           },
           isActive: true,
-          deletedAt: null
+          deletedAt: null,
         },
         data: {
           isActive: false,
-          deletedAt: new Date()
-        }
+          deletedAt: new Date(),
+        },
       })
 
       this.logger.log(`Cleaned up ${result.count} inactive sessions`)
     } catch (error) {
-      this.logger.error('Failed to cleanup inactive sessions:', error.message)
+      this.logger.error('Failed to cleanup inactive sessions:', error)
     }
   }
 
@@ -75,14 +75,14 @@ export class TokenCleanupService {
         where: {
           isRevoked: true,
           revokedAt: {
-            lt: sixtyDaysAgo
-          }
-        }
+            lt: sixtyDaysAgo,
+          },
+        },
       })
 
       this.logger.log(`Permanently deleted ${result.count} old revoked tokens`)
     } catch (error) {
-      this.logger.error('Failed to cleanup old revoked tokens:', error.message)
+      this.logger.error('Failed to cleanup old revoked tokens:', error)
     }
   }
 
@@ -93,29 +93,29 @@ export class TokenCleanupService {
           where: {
             isRevoked: false,
             expiresAt: {
-              gt: new Date()
-            }
-          }
+              gt: new Date(),
+            },
+          },
         }),
         this.#_prisma.refreshToken.count({
           where: {
             isRevoked: false,
             expiresAt: {
-              lt: new Date()
-            }
-          }
+              lt: new Date(),
+            },
+          },
         }),
         this.#_prisma.refreshToken.count({
           where: {
-            isRevoked: true
-          }
+            isRevoked: true,
+          },
         }),
         this.#_prisma.session.count({
           where: {
             isActive: true,
-            deletedAt: null
-          }
-        })
+            deletedAt: null,
+          },
+        }),
       ])
 
       return {
@@ -123,10 +123,10 @@ export class TokenCleanupService {
         expiredTokens,
         revokedTokens,
         totalSessions,
-        totalTokens: activeTokens + expiredTokens + revokedTokens
+        totalTokens: activeTokens + expiredTokens + revokedTokens,
       }
     } catch (error) {
-      this.logger.error('Failed to get token statistics:', error.message)
+      this.logger.error('Failed to get token statistics:', error)
       throw error
     }
   }
