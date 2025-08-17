@@ -5,21 +5,23 @@ import {
   NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common'
-import { JwtService, PrismaService } from '#services'
 import { Tokens } from './types/'
-
-import { UserRefreshRequestInterface, UserSigninRequest, UserSigninResponse, UserSignupResponse } from './interface'
-import { hash, compare } from '#common'
-import { Language, Role, UserStatus } from '@prisma/client'
 import { UserSignupDto } from './dto'
+import { ClsService } from 'nestjs-cls'
+import { hash, compare } from '#common'
+import { JwtService, PrismaService } from '#services'
+import { Language, Role, UserStatus } from '@prisma/client'
+import { UserRefreshRequestInterface, UserSigninRequest, UserSigninResponse, UserSignupResponse } from './interface'
 
 @Injectable()
 export class AuthService {
   readonly #_prisma: PrismaService
   readonly #_jwt: JwtService
-  constructor(prisma: PrismaService, jwt: JwtService) {
+  readonly #_cls: ClsService
+  constructor(prisma: PrismaService, jwt: JwtService, cls: ClsService) {
     this.#_prisma = prisma
     this.#_jwt = jwt
+    this.#_cls = cls
   }
 
   async signUp(dto: UserSignupDto): Promise<UserSignupResponse> {
@@ -48,7 +50,7 @@ export class AuthService {
       })
 
       const tokens = await this.#_getTokens(newUser.id, newUser.email)
-
+      this.#_createSession({ userId: newUser.id })
       return {
         id: newUser.id,
         access_token: tokens.access_token,
@@ -88,6 +90,7 @@ export class AuthService {
 
       const tokens = await this.#_getTokens(user.id, user.email)
 
+      this.#_createSession({ userId: user.id })
       return {
         id: user.id,
         access_token: tokens.access_token,
@@ -122,6 +125,15 @@ export class AuthService {
     return tokens
   }
 
+  async getSessions(userId:string){
+
+    return await this.#_prisma.session.findMany({
+      where:{
+        deletedAt:null,
+        isActive:true
+      }
+    })
+  }
   async #_getTokens(UserId: string, email: string): Promise<Tokens> {
     const [at, rt] = await Promise.all([
       this.#_jwt.sign({
@@ -140,5 +152,28 @@ export class AuthService {
       access_token: at,
       refresh_token: rt,
     }
+  }
+
+  async #_createSession(payload: { userId: string }): Promise<void> {
+    await this.#_prisma.session.create({
+      data: {
+        ip: this.#_cls.get('reqIp'),
+        device: this.#_cls.get('device'),
+        userId: payload.userId,
+      },
+    })
+  }
+
+  async #_terminateSession(payload: { userId: string; deviceId: string }): Promise<void> {
+    await this.#_prisma.session.update({
+      where: {
+        userId: payload.userId,
+        deviceId: payload.deviceId,
+      },
+      data: {
+        deletedAt: new Date(),
+        isActive: false,
+      },
+    })
   }
 }

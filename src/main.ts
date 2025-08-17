@@ -12,6 +12,7 @@ declare module 'nestjs-cls' {
     user: User
     reqId: string
     reqIp: string
+    device:string
   }
 }
 

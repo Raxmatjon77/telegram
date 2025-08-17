@@ -93,10 +93,10 @@ model User {
   chats         ChatParticipant[]
   sessions      Session[]
   ownedChats    Chat[] @relation("OwnerChats")
-  blockedUsers  UserBlock[] @relation("BlockerUser") // NEW: Blocked users
-  blockedByUsers UserBlock[] @relation("BlockedUser") // NEW: Users who blocked this user
-  messageReactions MessageReaction[] // NEW: Message reactions
-  files         File[] // NEW: Uploaded files
+  blockedUsers  UserBlock[] @relation("BlockerUser") 
+  blockedByUsers UserBlock[] @relation("BlockedUser") 
+  messageReactions MessageReaction[] 
+  files         File[] 
 
   @@index([email])
   @@index([username])
@@ -109,35 +109,39 @@ model User {
 }
 
 model Session {
-  id        String   @id @default(ulid())
-  userId    String   @map("user_id")
-  userAgent String?  @map("user_agent")
+  id        String      @id @default(ulid())
+  userId    String      @map("user_id")
+  userAgent String?     @map("user_agent")
   ip        String?
-  device    String?  // NEW: Device type (iPhone, Android, etc.)
-  platform  String? // NEW: Platform (iOS, Android, Web)
-  lastSeen  DateTime @default(now()) @map("last_seen")
-  isActive  Boolean  @default(true) @map("is_active") // NEW: Active session tracking
-  socketId  String?  @unique @map("socket_id") // MOVED: From User table
-  createdAt DateTime @default(now()) @map("created_at")
+  device    String? 
+  deviceId  String?     @map("device_id")
+  platform  String?
+  lastSeen  DateTime    @default(now()) @map("last_seen")
+  isActive  Boolean     @default(true) @map("is_active") 
+  socketId  String?     @unique @map("socket_id") 
+  createdAt DateTime    @default(now()) @map("created_at")
+  deletedAt  DateTime?  @map("deleted_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique(map: "device_id_uqk",fields: [deviceId])
   @@index([userId])
-  @@index([isActive]) // NEW: Index for active sessions
+  @@index([isActive])
   @@index([lastSeen])
+  @@index([deviceId])
   @@map("sessions")
 }
 
 model Chat {
   id          String    @id @default(ulid())
   title       String?
-  description String?   // NEW: Chat description
+  description String?  
   type        ChatType
   ownerId     String?   @map("owner_id") 
   avatar      String?   @map("avatar")
   inviteLink  String?   @unique @map("invite_link") // NEW: Invitation links
   isPublic    Boolean   @default(false) @map("is_public") // NEW: Public/private chats
-  membersCount Int      @default(0) @map("members_count") // NEW: Cached member count
+  membersCount Int      @default(0) @map("members_count") 
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
@@ -213,16 +217,15 @@ model Message {
   @@index([senderId], name: "message_sender_index")
   @@index([type], name: "message_type_index")
   @@index([createdAt], name: "message_created_at_index")
-  @@index([replyToId]) // NEW: Index for reply queries
-  @@index([threadId]) // NEW: Index for thread queries
-  @@index([editedAt]) // NEW: Index for edited messages
-  @@index([deletedAt]) // NEW: Index for active messages
-  @@index([chatId, createdAt]) // NEW: Composite index for pagination
-  @@unique([chatId, id]) // Ensures unique messages per chat
+  @@index([replyToId])
+  @@index([threadId]) 
+  @@index([editedAt]) 
+  @@index([deletedAt]) 
+  @@index([chatId, createdAt]) 
+  @@unique([chatId, id]) 
   @@map("messages")
 }
 
-// NEW: Message Reactions Model
 model MessageReaction {
   id        String   @id @default(ulid())
   messageId String   @map("message_id")
@@ -240,7 +243,7 @@ model MessageReaction {
   @@map("message_reactions")
 }
 
-// NEW: File Model for Media Handling
+
 model File {
   id           String   @id @default(ulid())
   messageId    String?  @map("message_id")
@@ -249,8 +252,8 @@ model File {
   originalName String   @map("original_name")
   mimeType     String   @map("mime_type")
   fileType     FileType @map("file_type")
-  size         Int      // File size in bytes
-  url          String   // File storage URL
+  size         Int     
+  url          String   
   thumbnailUrl String?  @map("thumbnail_url") // Thumbnail for images/videos
   duration     Int?     // Duration for audio/video files (seconds)
   width        Int?     // Width for images/videos
@@ -268,18 +271,17 @@ model File {
   @@map("files")
 }
 
-// NEW: User Blocking System
 model UserBlock {
   id        String   @id @default(ulid())
   blockerId String   @map("blocker_id")
   blockedId String   @map("blocked_id")
-  reason    String?  // Optional reason for blocking
+  reason    String? 
   createdAt DateTime @default(now()) @map("created_at")
 
   blocker User @relation("BlockerUser", fields: [blockerId], references: [id], onDelete: Cascade)
   blocked User @relation("BlockedUser", fields: [blockedId], references: [id], onDelete: Cascade)
 
-  @@unique([blockerId, blockedId]) // Prevent duplicate blocks
+  @@unique([blockerId, blockedId]) 
   @@index([blockerId])
   @@index([blockedId])
   @@map("user_blocks")

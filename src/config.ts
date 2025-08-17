@@ -19,6 +19,12 @@ export declare type Config = {
     secret: string
     expiration: string
   }
+  minio: {
+    user: string
+    pass: string
+    url: string
+    port: string
+  }
 }
 
 export const config = (): Config => ({
@@ -41,5 +47,11 @@ export const config = (): Config => ({
   jwt: {
     secret: process.env.JWT_SECRET,
     expiration: process.env.JWT_EXPIRE,
+  },
+  minio: {
+    user: process.env.MINIO_USER,
+    pass: process.env.MINIO_PASS,
+    url: process.env.MINIO_URL,
+    port: process.env.MINIO_PORT,
   },
 })

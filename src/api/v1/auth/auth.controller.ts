@@ -18,21 +18,21 @@ export class AuthController {
 
   @Post('/signup')
   @HttpCode(HttpStatus.CREATED)
-  @Throttle({ short: { limit: 2, ttl: 60000 } }) // 2 requests per minute for signup
+  @Throttle({ short: { limit: 2, ttl: 60000 } }) 
   SignUp(@Body() dto: UserSignupDto): Promise<UserSignupResponse> {
     return this.#_service.signUp(dto)
   }
 
   @Post('/signin')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 3, ttl: 60000 } }) // 3 requests per minute for signin
+  @Throttle({ short: { limit: 3, ttl: 60000 } }) 
   SignIn(@Body() dto: UserSigninDto): Promise<UserSigninResponse> {
     return this.#_service.signIn(dto)
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ medium: { limit: 10, ttl: 60000 } }) // 10 requests per minute for token refresh
+  @Throttle({ medium: { limit: 10, ttl: 60000 } }) 
   refresh(@Body() payload: UserRefreshDto): Promise<Tokens> {
     return this.#_service.refresh(payload)
   }
