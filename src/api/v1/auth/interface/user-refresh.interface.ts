@@ -1,6 +1,5 @@
 export interface UserRefreshRequestInterface {
-  refresh_token: string
-  userId: string
+  refreshToken: string
 }
 
 export interface UserRefreshResponseInterface {

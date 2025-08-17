@@ -78,17 +78,16 @@ model User {
   lastName  String?  @map("last_name")
   password  String?
   avatar    String?
-  bio       String?  // NEW: User biography
+  bio       String?
   status    UserStatus @default(offline)
   language  Language @default(uzb)
-  isBot     Boolean  @default(false) @map("is_bot") // NEW: Bot identification
-  isVerified Boolean @default(false) @map("is_verified") // NEW: Verified account
+  isBot     Boolean  @default(false) @map("is_bot")
+  isVerified Boolean @default(false) @map("is_verified")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
-  lastSeenAt DateTime? @map("last_seen_at") // NEW: Last activity tracking
+  lastSeenAt DateTime? @map("last_seen_at")
 
-  // Relationships
   messages      Message[]
   chats         ChatParticipant[]
   sessions      Session[]
@@ -96,15 +95,16 @@ model User {
   blockedUsers  UserBlock[] @relation("BlockerUser") 
   blockedByUsers UserBlock[] @relation("BlockedUser") 
   messageReactions MessageReaction[] 
-  files         File[] 
+  files         File[]
+  refreshTokens RefreshToken[]
 
   @@index([email])
   @@index([username])
   @@index([phone])
-  @@index([isBot]) // NEW: Index for bot queries
-  @@index([isVerified]) // NEW: Index for verified users
+  @@index([isBot])
+  @@index([isVerified])
   @@index([deletedAt])
-  @@index([lastSeenAt]) // NEW: Index for activity queries
+  @@index([lastSeenAt])
   @@map("users")
 }
 
@@ -132,6 +132,30 @@ model Session {
   @@map("sessions")
 }
 
+model RefreshToken {
+  id        String   @id @default(ulid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  sessionId String?  @map("session_id")
+  userAgent String?  @map("user_agent")
+  ip        String?
+  deviceId  String?  @map("device_id")
+  isRevoked Boolean  @default(false) @map("is_revoked")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([sessionId])
+  @@index([deviceId])
+  @@index([expiresAt])
+  @@index([isRevoked])
+  @@map("refresh_tokens")
+}
+
 model Chat {
   id          String    @id @default(ulid())
   title       String?
@@ -139,8 +163,8 @@ model Chat {
   type        ChatType
   ownerId     String?   @map("owner_id") 
   avatar      String?   @map("avatar")
-  inviteLink  String?   @unique @map("invite_link") // NEW: Invitation links
-  isPublic    Boolean   @default(false) @map("is_public") // NEW: Public/private chats
+  inviteLink  String?   @unique @map("invite_link")
+  isPublic    Boolean   @default(false) @map("is_public")
   membersCount Int      @default(0) @map("members_count") 
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -153,9 +177,9 @@ model Chat {
   @@index([title], name: "chat_title_index")
   @@index([type], name: "chat_type_index")
   @@index([ownerId], name: "chat_owner_index")
-  @@index([isPublic]) // NEW: Index for public chat discovery
-  @@index([inviteLink]) // NEW: Index for invite link lookups
-  @@index([membersCount]) // NEW: Index for member count queries
+  @@index([isPublic])
+  @@index([inviteLink])
+  @@index([membersCount])
   @@index([deletedAt])
   @@unique([title, type]) 
   @@map("chats") 
@@ -165,7 +189,7 @@ model ChatParticipant {
   id           String   @id @default(ulid())
   userId       String   @map("user_id") 
   chatId       String   @map("chat_id") 
-  role         String   @default("member") @map("role") // NEW: owner, admin, member
+  role         String   @default("member") @map("role")
   isAdmin      Boolean  @default(false) @map("is_admin") @db.Boolean
   joinedAt     DateTime @default(now()) @map("joined_at")
   leftAt       DateTime? @map("left_at")
@@ -173,16 +197,16 @@ model ChatParticipant {
   isMuted      Boolean  @default(false) @map("is_muted") @db.Boolean
   isArchived   Boolean  @default(false) @map("is_archived") @db.Boolean
   isRead       Boolean  @default(true)  @map("is_read") @db.Boolean
-  lastReadMessageId String? @map("last_read_message_id") // NEW: Per-user read tracking
-  unreadCount  Int      @default(0) @map("unread_count") // NEW: Unread message counter
+  lastReadMessageId String? @map("last_read_message_id")
+  unreadCount  Int      @default(0) @map("unread_count")
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
   @@index([userId], name: "chat_participant_user_index")
   @@index([chatId], name: "chat_participant_chat_index")
-  @@index([role]) // NEW: Index for role-based queries
-  @@index([leftAt]) // NEW: Index for active participants
+  @@index([role])
+  @@index([leftAt])
   @@unique([userId, chatId])
   @@map("chat_participants")
 }
@@ -196,8 +220,8 @@ model Message {
   content         String?
   replyToId       String?     @map("reply_to_id")
   forwardedFromId String?     @map("forwarded_from_id")
-  threadId        String?     @map("thread_id") // NEW: For message threading
-  editedAt        DateTime?   @map("edited_at") // NEW: Message edit tracking
+  threadId        String?     @map("thread_id")
+  editedAt        DateTime?   @map("edited_at")
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   deletedAt       DateTime?   @map("deleted_at")
@@ -208,10 +232,10 @@ model Message {
   replies         Message[]  @relation("replyTo")
   forwardedFrom   Message?   @relation("forwardedFrom", fields: [forwardedFromId], references: [id])
   forwarded       Message[]  @relation("forwardedFrom")
-  thread          Message?   @relation("MessageThread", fields: [threadId], references: [id]) // NEW: Thread support
-  threadMessages  Message[]  @relation("MessageThread") // NEW: Messages in thread
-  files           File[]     // NEW: Attached files
-  reactions       MessageReaction[] // NEW: Message reactions
+  thread          Message?   @relation("MessageThread", fields: [threadId], references: [id])
+  threadMessages  Message[]  @relation("MessageThread")
+  files           File[]
+  reactions       MessageReaction[]
 
   @@index([chatId], name: "message_chat_index")
   @@index([senderId], name: "message_sender_index")
@@ -230,19 +254,18 @@ model MessageReaction {
   id        String   @id @default(ulid())
   messageId String   @map("message_id")
   userId    String   @map("user_id")
-  emoji     String   // 👍, ❤️, 😂, 😮, 😢, 😡
+  emoji     String
   createdAt DateTime @default(now()) @map("created_at")
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([messageId, userId, emoji]) // Prevent duplicate reactions
+  @@unique([messageId, userId, emoji])
   @@index([messageId])
   @@index([userId])
-  @@index([emoji]) // For emoji statistics
+  @@index([emoji])
   @@map("message_reactions")
 }
-
 
 model File {
   id           String   @id @default(ulid())
@@ -254,10 +277,10 @@ model File {
   fileType     FileType @map("file_type")
   size         Int     
   url          String   
-  thumbnailUrl String?  @map("thumbnail_url") // Thumbnail for images/videos
-  duration     Int?     // Duration for audio/video files (seconds)
-  width        Int?     // Width for images/videos
-  height       Int?     // Height for images/videos
+  thumbnailUrl String?  @map("thumbnail_url")
+  duration     Int?
+  width        Int?
+  height       Int?
   createdAt    DateTime @default(now()) @map("created_at")
 
   message  Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
