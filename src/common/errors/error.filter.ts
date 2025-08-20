@@ -7,7 +7,6 @@ export class ErrorFilter implements ExceptionFilter {
   catch(err: any, host: ArgumentsHost): Response {
     const http = host.switchToHttp()
     const res = http.getResponse<Response>()
-
     if (err instanceof HttpException) {
       const status = err.getStatus()
 

@@ -12,6 +12,17 @@ export class MessageReactionsService {
     this.#_cls = cls
   }
 
+  /**
+   * Add a reaction (emoji) to a message
+   *
+   * WebSocket event: 'addReaction'
+   *
+   * @param messageId - The ID of the message to react to
+   * @param emoji - The emoji to add as a reaction
+   * @returns The created or updated reaction object with user details
+   * @throws NotFoundException if message not found or access denied
+   * @throws BadRequestException if emoji is invalid
+   */
   async addReaction(messageId: string, emoji: string) {
     const user = this.#_cls.get('user')
 
@@ -73,6 +84,16 @@ export class MessageReactionsService {
     return reaction
   }
 
+  /**
+   * Remove a reaction (emoji) from a message
+   *
+   * WebSocket event: 'removeReaction'
+   *
+   * @param messageId - The ID of the message to remove reaction from
+   * @param emoji - The emoji to remove as a reaction
+   * @returns Success status of reaction removal
+   * @throws NotFoundException if reaction not found
+   */
   async removeReaction(messageId: string, emoji: string) {
     const user = this.#_cls.get('user')
 
@@ -91,6 +112,15 @@ export class MessageReactionsService {
     return { success: true }
   }
 
+  /**
+   * Get all reactions for a message
+   *
+   * WebSocket event: 'getMessageReactions'
+   *
+   * @param messageId - The ID of the message to get reactions for
+   * @returns Array of reaction objects grouped by emoji with user details
+   * @throws NotFoundException if message not found or access denied
+   */
   async getMessageReactions(messageId: string) {
     const user = this.#_cls.get('user')
 
@@ -164,6 +194,14 @@ export class MessageReactionsService {
     return detailedReactions
   }
 
+  /**
+   * Get all reactions added by the current user to a message
+   *
+   * WebSocket event: 'getUserReactions'
+   *
+   * @param messageId - The ID of the message to get user reactions for
+   * @returns Array of emojis representing the user's reactions
+   */
   async getUserReactions(messageId: string) {
     const user = this.#_cls.get('user')
 

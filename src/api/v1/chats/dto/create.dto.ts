@@ -15,13 +15,16 @@ export type Create = z.infer<typeof createDto>
 export class CreateDto implements Create {
   @ApiProperty({
     description: 'The title of the chat',
-    example: 'New Chat',
+    example: 'Team Meeting',
+    required: true
   })
   title: string
 
   @ApiProperty({
     description: 'The type of the chat',
     enum: ChatType,
+    example: 'group',
+    required: false
   })
   type: ChatType
 }

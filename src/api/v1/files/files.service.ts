@@ -26,6 +26,16 @@ export class FilesService {
     this.#_cls = cls
   }
 
+  /**
+   * Upload a file
+   *
+   * WebSocket event: 'uploadFile'
+   *
+   * @param fileData - FileUploadData containing file information
+   * @returns The created file object with uploader details
+   * @throws BadRequestException if file is too large
+   * @throws NotFoundException if message not found or access denied
+   */
   async uploadFile(fileData: FileUploadData) {
     const user = this.#_cls.get('user')
 
@@ -99,6 +109,15 @@ export class FilesService {
     return file
   }
 
+  /**
+   * Get a file by ID
+   *
+   * WebSocket event: 'getFile'
+   *
+   * @param fileId - The ID of the file to retrieve
+   * @returns The file object with uploader and message details
+   * @throws NotFoundException if file not found or access denied
+   */
   async getFile(fileId: string) {
     const user = this.#_cls.get('user')
 
@@ -136,7 +155,7 @@ export class FilesService {
     }
 
     // Check if user has access (either uploader or participant in the chat)
-    const hasAccess = file.uploaderId === user.id || 
+    const hasAccess = file.uploaderId === user.id ||
                      (file.message?.chat.participants && file.message.chat.participants.length > 0)
 
     if (!hasAccess) {
@@ -146,6 +165,18 @@ export class FilesService {
     return file
   }
 
+  /**
+   * Get files uploaded by a user
+   *
+   * WebSocket event: 'getUserFiles'
+   *
+   * @param userId - The ID of the user to get files for (optional, defaults to current user)
+   * @param fileType - The type of files to filter by (optional)
+   * @param limit - Maximum number of files to return (default: 50)
+   * @param cursor - Cursor for pagination (optional)
+   * @returns Array of file objects with uploader details
+   * @throws NotFoundException if access denied - no shared chats
+   */
   async getUserFiles(userId?: string, fileType?: FileType, limit = 50, cursor?: string) {
     const user = this.#_cls.get('user')
     const targetUserId = userId || user.id
@@ -212,6 +243,16 @@ export class FilesService {
     return files
   }
 
+  /**
+   * Delete a file by ID
+   *
+   * WebSocket event: 'deleteFile'
+   *
+   * @param fileId - The ID of the file to delete
+   * @returns Success status of file deletion
+   * @throws NotFoundException if file not found
+   * @throws BadRequestException if user is not the uploader
+   */
   async deleteFile(fileId: string) {
     const user = this.#_cls.get('user')
 
@@ -253,6 +294,13 @@ export class FilesService {
     }
   }
 
+  /**
+   * Get file statistics for the current user
+   *
+   * WebSocket event: 'getFileStatistics'
+   *
+   * @returns Array of file statistics grouped by file type
+   */
   async getFileStatistics() {
     const user = this.#_cls.get('user')
 

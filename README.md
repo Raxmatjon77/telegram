@@ -13,6 +13,7 @@ A comprehensive, scalable chat service built with NestJS, PostgreSQL, and WebSoc
 ## 🌟 Features
 
 ### Authentication & Security
+
 - 🔐 **JWT-based Authentication** with access and refresh tokens
 - 🛡️ **Database-stored Refresh Tokens** with automatic rotation
 - 🔑 **Secure Password Hashing** using bcrypt
@@ -22,6 +23,7 @@ A comprehensive, scalable chat service built with NestJS, PostgreSQL, and WebSoc
 - 🚦 **Rate Limiting** to prevent abuse
 
 ### Messaging
+
 - 💬 **Real-time Messaging** via WebSocket
 - 📎 **File Sharing** with MinIO integration
 - 🎉 **Message Reactions** (like, love, laugh, etc.)
@@ -32,6 +34,7 @@ A comprehensive, scalable chat service built with NestJS, PostgreSQL, and WebSoc
 - 🔍 **Message Search** capabilities
 
 ### Users & Profiles
+
 - 👤 **User Profiles** with avatars and bios
 - 📇 **User Search** and discovery
 - 🔐 **Privacy Controls** with blocking system
@@ -39,6 +42,7 @@ A comprehensive, scalable chat service built with NestJS, PostgreSQL, and WebSoc
 - 🏷️ **User Verification** system
 
 ### Chats
+
 - 👥 **Private & Group Chats**
 - 📝 **Chat Descriptions** and metadata
 - 🔗 **Invite Links** for group access
@@ -97,12 +101,14 @@ See [DATABASE_ENHANCEMENT_GUIDE.md](DATABASE_ENHANCEMENT_GUIDE.md) for detailed 
 The authentication system implements industry best practices:
 
 ### Token Management
+
 - **Access Tokens**: Short-lived JWT tokens (default 1 hour)
 - **Refresh Tokens**: Long-lived tokens stored in database with 30-day expiration
 - **Automatic Token Rotation**: Refresh tokens are rotated on each use
 - **Device Binding**: Tokens are bound to specific devices with fingerprinting
 
 ### Security Features
+
 - **Rate Limiting**: Throttling on authentication endpoints
 - **Password Validation**: Strong password requirements
 - **Input Validation**: Zod-based validation for all inputs
@@ -133,6 +139,7 @@ WebSocket-based real-time communication:
 ## 🚀 API Endpoints
 
 ### Authentication
+
 ```
 POST   /api/v1/auth/signup          # User registration
 POST   /api/v1/auth/signin          # User login
@@ -144,6 +151,7 @@ GET    /api/v1/auth/refresh-tokens  # Get active refresh tokens
 ```
 
 ### Users
+
 ```
 GET    /api/v1/user/profile         # Get user profile
 PATCH  /api/v1/user/profile         # Update user profile
@@ -153,6 +161,7 @@ DELETE /api/v1/user/block/:userId   # Unblock user
 ```
 
 ### Chats
+
 ```
 POST   /api/v1/chats                # Create new chat
 GET    /api/v1/chats                # Get user chats
@@ -166,6 +175,7 @@ PATCH  /api/v1/chats/:chatId/pin    # Pin/unpin chat
 ```
 
 ### Messages (WebSocket Events)
+
 ```
 sendMessage    # Send a message to a chat
 joinChat       # Join a chat room
@@ -176,6 +186,7 @@ deleteMessage  # Delete a message
 ## 🛠️ Installation
 
 ### Prerequisites
+
 - Node.js >= 18
 - PostgreSQL >= 13
 - MinIO or S3-compatible storage
@@ -184,28 +195,33 @@ deleteMessage  # Delete a message
 ### Setup
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd chat-service
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Set up environment variables:
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
 4. Run database migrations:
+
 ```bash
 npx prisma migrate dev
 ```
 
 5. Start the development server:
+
 ```bash
 pnpm run start:dev
 ```
@@ -235,6 +251,7 @@ APP_TOKEN=your-app-token
 ## 🧪 Development
 
 ### Scripts
+
 ```bash
 # Development
 pnpm run start:dev
@@ -254,6 +271,7 @@ pnpm run format
 ```
 
 ### Project Structure Guidelines
+
 - **Modular Design**: Each feature is a separate module
 - **Single Responsibility**: Services have focused responsibilities
 - **Dependency Injection**: All dependencies are injected via constructor
@@ -264,11 +282,13 @@ pnpm run format
 ## 📊 Monitoring & Maintenance
 
 ### Scheduled Tasks
+
 - **Daily at 2 AM**: Cleanup expired refresh tokens
 - **Daily at 3 AM**: Cleanup inactive sessions
 - **Weekly**: Cleanup old revoked tokens
 
 ### Health Checks
+
 - **API Health**: `/api/health` endpoint
 - **Database Health**: Connection status
 - **Storage Health**: MinIO connectivity
@@ -276,6 +296,7 @@ pnpm run format
 ## 🚀 Deployment
 
 ### Production Considerations
+
 1. Use environment-specific configuration
 2. Set up proper SSL certificates
 3. Configure load balancing for horizontal scaling
@@ -284,6 +305,7 @@ pnpm run format
 6. Secure storage access policies
 
 ### Docker Deployment
+
 ```dockerfile
 # Build stage
 FROM node:18-alpine AS builder
@@ -323,7 +345,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👥 Authors
 
-- **Kamil Myśliwiec** - *Initial work* - [kamilmysliwiec](https://github.com/kamilmysliwiec)
+- **Khamidov Rakhmatjon**
 
 ## 🙏 Acknowledgments
 

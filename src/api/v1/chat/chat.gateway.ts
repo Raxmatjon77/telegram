@@ -31,6 +31,17 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     console.log(`Client disconnected: ${client.id}`)
   }
 
+  /**
+   * Send a message to a chat
+   *
+   * Emits:
+   * - 'newMessage' to all participants in the chat with the message details
+   * - 'error' if there's an issue sending the message
+   *
+   * @param dto - CreateMessageDto containing chatId, text, type, and replyToId
+   * @param client - Connected socket client
+   * @returns The created message object
+   */
   @SubscribeMessage('sendMessage')
   async handleSendMessage(@MessageBody() dto: CreateMessageDto, @ConnectedSocket() client: Socket) {
     try {
@@ -45,6 +56,17 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
   }
 
+  /**
+   * Join a chat room
+   *
+   * Emits:
+   * - 'joinedChat' with the chatId when successfully joined
+   * - 'error' if there's an issue joining the chat
+   *
+   * @param chatId - The ID of the chat to join
+   * @param client - Connected socket client
+   * @returns Object with event name and chatId
+   */
   @SubscribeMessage('joinChat')
   async handleJoinChat(@MessageBody('chatId') chatId: string, @ConnectedSocket() client: Socket) {
     try {
@@ -58,6 +80,17 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
   }
 
+  /**
+   * Get messages for a chat
+   *
+   * Emits:
+   * - Returns an array of messages for the specified chat
+   * - 'error' if there's an issue retrieving messages
+   *
+   * @param data - Object containing chatId, limit (optional), and cursor (optional)
+   * @param client - Connected socket client
+   * @returns Array of message objects
+   */
   @SubscribeMessage('getMessages')
   async handleGetMessages(
     @MessageBody() data: { chatId: string; limit?: number; cursor?: string },
@@ -73,6 +106,17 @@ export class MessagesGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     }
   }
 
+  /**
+   * Delete a message
+   *
+   * Emits:
+   * - Returns success status of message deletion
+   * - 'error' if there's an issue deleting the message
+   *
+   * @param messageId - The ID of the message to delete
+   * @param client - Connected socket client
+   * @returns Success status of message deletion
+   */
   @SubscribeMessage('deleteMessage')
   async handleDeleteMessage(@MessageBody('messageId') messageId: string, @ConnectedSocket() client: Socket) {
     try {
