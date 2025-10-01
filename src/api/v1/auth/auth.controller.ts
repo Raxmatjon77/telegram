@@ -105,14 +105,6 @@ export class AuthController {
     return this.#_service.getActiveRefreshTokens(user.id)
   }
 
-  // @Delete('sessions/:sessionId')
-  // @HttpCode(HttpStatus.OK)
-  // @UseGuards(ProfileGuard)
-  // async terminateSession(@Param('sessionId') sessionId: string): Promise<{ success: boolean }> {
-  //   await this.#_service.te(sessionId)
-  //   return { success: true }
-  // }
-
   @Post('cleanup-expired-tokens')
   @HttpCode(HttpStatus.OK)
   @Throttle({ long: { limit: 1, ttl: 300000 } })
