@@ -42,7 +42,6 @@ export class MessagingService {
   async getChatMessages(chatId: string, limit = 50, cursor?: string) {
     const user = this.#_cls.get('user')
 
-    // Ensure participant
     const participant = await this.#_prisma.chatParticipant.findUnique({
       where: { userId_chatId: { userId: user.id, chatId } },
     })

@@ -26,37 +26,23 @@ export class FilesService {
     this.#_cls = cls
   }
 
-  /**
-   * Upload a file
-   *
-   * WebSocket event: 'uploadFile'
-   *
-   * @param fileData - FileUploadData containing file information
-   * @returns The created file object with uploader details
-   * @throws BadRequestException if file is too large
-   * @throws NotFoundException if message not found or access denied
-   */
   async uploadFile(fileData: FileUploadData) {
     const user = this.#_cls.get('user')
 
-    // Determine file type based on MIME type
     const fileType = this.#_getFileType(fileData.mimeType)
-
-    // Validate file size (example limits)
     const maxSizes = {
-      image: 10 * 1024 * 1024,      // 10MB for images
-      video: 100 * 1024 * 1024,     // 100MB for videos
-      audio: 50 * 1024 * 1024,      // 50MB for audio
-      document: 20 * 1024 * 1024,   // 20MB for documents
-      voice: 10 * 1024 * 1024,      // 10MB for voice
-      sticker: 1 * 1024 * 1024      // 1MB for stickers
+      image: 10 * 1024 * 1024,
+      video: 100 * 1024 * 1024,
+      audio: 50 * 1024 * 1024,
+      document: 20 * 1024 * 1024,
+      voice: 10 * 1024 * 1024,
+      sticker: 1 * 1024 * 1024
     }
 
     if (fileData.size > maxSizes[fileType]) {
       throw new BadRequestException(`File too large. Maximum size for ${fileType} is ${maxSizes[fileType] / (1024 * 1024)}MB`)
     }
 
-    // If messageId is provided, verify user has access to the chat
     if (fileData.messageId) {
       const hasAccess = await this.#_prisma.message.findFirst({
         where: {
@@ -77,7 +63,6 @@ export class FilesService {
       }
     }
 
-    // Create file record
     const file = await this.#_prisma.file.create({
       data: {
         messageId: fileData.messageId,
@@ -109,15 +94,6 @@ export class FilesService {
     return file
   }
 
-  /**
-   * Get a file by ID
-   *
-   * WebSocket event: 'getFile'
-   *
-   * @param fileId - The ID of the file to retrieve
-   * @returns The file object with uploader and message details
-   * @throws NotFoundException if file not found or access denied
-   */
   async getFile(fileId: string) {
     const user = this.#_cls.get('user')
 
@@ -154,7 +130,6 @@ export class FilesService {
       throw new NotFoundException('File not found')
     }
 
-    // Check if user has access (either uploader or participant in the chat)
     const hasAccess = file.uploaderId === user.id ||
                      (file.message?.chat.participants && file.message.chat.participants.length > 0)
 
@@ -165,23 +140,10 @@ export class FilesService {
     return file
   }
 
-  /**
-   * Get files uploaded by a user
-   *
-   * WebSocket event: 'getUserFiles'
-   *
-   * @param userId - The ID of the user to get files for (optional, defaults to current user)
-   * @param fileType - The type of files to filter by (optional)
-   * @param limit - Maximum number of files to return (default: 50)
-   * @param cursor - Cursor for pagination (optional)
-   * @returns Array of file objects with uploader details
-   * @throws NotFoundException if access denied - no shared chats
-   */
   async getUserFiles(userId?: string, fileType?: FileType, limit = 50, cursor?: string) {
     const user = this.#_cls.get('user')
     const targetUserId = userId || user.id
 
-    // If requesting another user's files, check if they have shared chats
     if (targetUserId !== user.id) {
       const sharedChats = await this.#_prisma.chatParticipant.findFirst({
         where: {
@@ -207,7 +169,6 @@ export class FilesService {
       where: {
         uploaderId: targetUserId,
         ...(fileType && { fileType }),
-        // Only files from chats the requesting user has access to
         message: {
           chat: {
             participants: {
@@ -243,16 +204,6 @@ export class FilesService {
     return files
   }
 
-  /**
-   * Delete a file by ID
-   *
-   * WebSocket event: 'deleteFile'
-   *
-   * @param fileId - The ID of the file to delete
-   * @returns Success status of file deletion
-   * @throws NotFoundException if file not found
-   * @throws BadRequestException if user is not the uploader
-   */
   async deleteFile(fileId: string) {
     const user = this.#_cls.get('user')
 
@@ -264,7 +215,6 @@ export class FilesService {
       throw new NotFoundException('File not found')
     }
 
-    // Only uploader can delete the file
     if (file.uploaderId !== user.id) {
       throw new BadRequestException('Only the uploader can delete this file')
     }
@@ -282,7 +232,6 @@ export class FilesService {
     } else if (mimeType.startsWith('video/')) {
       return FileType.video
     } else if (mimeType.startsWith('audio/')) {
-      // Distinguish between general audio and voice messages
       if (mimeType.includes('ogg') || mimeType.includes('webm')) {
         return FileType.voice
       }
@@ -294,13 +243,6 @@ export class FilesService {
     }
   }
 
-  /**
-   * Get file statistics for the current user
-   *
-   * WebSocket event: 'getFileStatistics'
-   *
-   * @returns Array of file statistics grouped by file type
-   */
   async getFileStatistics() {
     const user = this.#_cls.get('user')
 
